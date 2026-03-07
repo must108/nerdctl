@@ -1,17 +1,19 @@
 /*
-Copyright The containerd Authors.
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+   Copyright The containerd Authors.
 
-	http://www.apache.org/licenses/LICENSE-2.0
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
+
 package container
 
 import (
@@ -37,38 +39,46 @@ func setupPsTestContainer(identity string, restart bool, hyperv bool) func(data 
 		data.Labels().Set("containerName", containerName)
 		// A container can have multiple labels.
 		testLabels := make(map[string]string)
+
 		for i := 0; i < 2; i++ {
 			k := fmt.Sprintf("%s-%d", data.Identifier(identity), i)
 			testLabels[k] = k
 			data.Labels().Set(fmt.Sprintf("label-key-%d", i), k)
 			data.Labels().Set(fmt.Sprintf("label-value-%d", i), k)
 		}
+
 		args := []string{
 			"run",
 			"-d",
 		}
+
 		if hyperv {
 			args = append(args, "--isolation", "hyperv")
 		}
+
 		args = append(args,
 			"--name", containerName,
 			"--label", formatter.FormatLabels(testLabels),
 			testutil.NginxAlpineImage,
 		)
+
 		if !restart {
 			args = append(args, "--restart=no")
 		}
+
 		helpers.Ensure(args...)
 		if restart {
 			nerdtest.EnsureContainerStarted(helpers, containerName)
 		}
 	}
 }
+
 func cleanupPsTestContainer() func(data test.Data, helpers test.Helpers) {
 	return func(data test.Data, helpers test.Helpers) {
 		helpers.Anyhow("rm", "-f", data.Labels().Get("containerName"))
 	}
 }
+
 func TestListProcessContainer(t *testing.T) {
 	testCase := nerdtest.Setup()
 	testCase.Setup = setupPsTestContainer("list", true, false)
@@ -76,6 +86,7 @@ func TestListProcessContainer(t *testing.T) {
 	testCase.Command = func(data test.Data, helpers test.Helpers) test.TestableCommand {
 		return helpers.Command("ps", "-s", "--filter", fmt.Sprintf("name=%s", data.Labels().Get("containerName")))
 	}
+
 	testCase.Expected = func(data test.Data, helpers test.Helpers) *test.Expected {
 		return &test.Expected{
 			ExitCode: 0,
@@ -95,11 +106,13 @@ func TestListProcessContainer(t *testing.T) {
 			},
 		}
 	}
+
 	testCase.Run(t)
 }
 func TestListHyperVContainer(t *testing.T) {
 	testCase := nerdtest.Setup()
 	testCase.Require = nerdtest.HyperV
+
 	testCase.Setup = func(data test.Data, helpers test.Helpers) {
 		setupPsTestContainer("list", true, true)(data, helpers)
 		containerName := data.Labels().Get("containerName")
@@ -108,10 +121,13 @@ func TestListHyperVContainer(t *testing.T) {
 		assert.NilError(helpers.T(), err, "unable to list HCS containers")
 		assert.Assert(helpers.T(), isHypervContainer, "expected HyperV container")
 	}
+
 	testCase.Cleanup = cleanupPsTestContainer()
+
 	testCase.Command = func(data test.Data, helpers test.Helpers) test.TestableCommand {
 		return helpers.Command("ps", "-s", "--filter", fmt.Sprintf("name=%s", data.Labels().Get("containerName")))
 	}
+
 	testCase.Expected = func(data test.Data, helpers test.Helpers) *test.Expected {
 		return &test.Expected{
 			ExitCode: 0,
@@ -132,6 +148,7 @@ func TestListHyperVContainer(t *testing.T) {
 			},
 		}
 	}
+
 	testCase.Run(t)
 }
 func TestListProcessContainerWideMode(t *testing.T) {
@@ -139,9 +156,11 @@ func TestListProcessContainerWideMode(t *testing.T) {
 	testCase.Require = require.Not(nerdtest.Docker)
 	testCase.Setup = setupPsTestContainer("listWithMode", true, false)
 	testCase.Cleanup = cleanupPsTestContainer()
+
 	testCase.Command = func(data test.Data, helpers test.Helpers) test.TestableCommand {
 		return helpers.Command("ps", "--format", "wide", "--filter", fmt.Sprintf("name=%s", data.Labels().Get("containerName")))
 	}
+
 	testCase.Expected = func(data test.Data, helpers test.Helpers) *test.Expected {
 		return &test.Expected{
 			ExitCode: 0,
@@ -164,15 +183,18 @@ func TestListProcessContainerWideMode(t *testing.T) {
 			},
 		}
 	}
+
 	testCase.Run(t)
 }
 func TestListProcessContainerWithLabels(t *testing.T) {
 	testCase := nerdtest.Setup()
 	testCase.Setup = setupPsTestContainer("listWithLabels", true, false)
 	testCase.Cleanup = cleanupPsTestContainer()
+
 	testCase.Command = func(data test.Data, helpers test.Helpers) test.TestableCommand {
 		return helpers.Command("ps", "--format", "{{.Labels}}", "--filter", fmt.Sprintf("name=%s", data.Labels().Get("containerName")))
 	}
+
 	testCase.Expected = func(data test.Data, helpers test.Helpers) *test.Expected {
 		return &test.Expected{
 			ExitCode: 0,
@@ -181,9 +203,11 @@ func TestListProcessContainerWithLabels(t *testing.T) {
 				assert.Assert(t, len(lines) == 1, fmt.Sprintf("expected 1 line, got %d", len(lines)))
 				labelsMap, err := strutil.ParseCSVMap(lines[0])
 				assert.NilError(t, err, "failed to parse labels")
+
 				for idx := 0; idx < 2; idx++ {
 					labelKey := data.Labels().Get(fmt.Sprintf("label-key-%d", idx))
 					labelValue := data.Labels().Get(fmt.Sprintf("label-value-%d", idx))
+
 					if value, ok := labelsMap[labelKey]; ok {
 						assert.Equal(t, value, labelValue)
 					}
