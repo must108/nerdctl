@@ -21,15 +21,18 @@ import (
 	"strings"
 	"testing"
 
+	"gotest.tools/v3/assert"
+
+	"github.com/containerd/nerdctl/mod/tigron/expect"
 	"github.com/containerd/nerdctl/mod/tigron/require"
 	"github.com/containerd/nerdctl/mod/tigron/test"
 	"github.com/containerd/nerdctl/mod/tigron/tig"
+
 	"github.com/containerd/nerdctl/v2/pkg/formatter"
 	"github.com/containerd/nerdctl/v2/pkg/strutil"
 	"github.com/containerd/nerdctl/v2/pkg/tabutil"
 	"github.com/containerd/nerdctl/v2/pkg/testutil"
 	"github.com/containerd/nerdctl/v2/pkg/testutil/nerdtest"
-	"gotest.tools/v3/assert"
 )
 
 func setupPsTestContainer(identity string, restart bool, hyperv bool) func(data test.Data, helpers test.Helpers) {
@@ -89,7 +92,7 @@ func TestListProcessContainer(t *testing.T) {
 
 	testCase.Expected = func(data test.Data, helpers test.Helpers) *test.Expected {
 		return &test.Expected{
-			ExitCode: 0,
+			ExitCode: expect.ExitCodeSuccess,
 			Output: func(stdout string, t tig.T) {
 				lines := strings.Split(strings.TrimSpace(stdout), "\n")
 				assert.Assert(t, len(lines) >= 2, fmt.Sprintf("expected at least 2 lines, got %d", len(lines)))
@@ -101,8 +104,11 @@ func TestListProcessContainer(t *testing.T) {
 				image, _ := tab.ReadRow(lines[1], "IMAGE")
 				assert.Equal(t, image, testutil.NginxAlpineImage)
 				size, _ := tab.ReadRow(lines[1], "SIZE")
-				assert.Assert(t, strings.Contains(size, "(virtual"),
-					fmt.Sprintf("expect container size to contain '(virtual', but got %s", size))
+				assert.Assert(
+					t,
+					strings.Contains(size, "(virtual"),
+					fmt.Sprintf("expect container size to contain '(virtual', but got %s", size),
+				)
 			},
 		}
 	}
@@ -130,7 +136,7 @@ func TestListHyperVContainer(t *testing.T) {
 
 	testCase.Expected = func(data test.Data, helpers test.Helpers) *test.Expected {
 		return &test.Expected{
-			ExitCode: 0,
+			ExitCode: expect.ExitCodeSuccess,
 			Output: func(stdout string, t tig.T) {
 				lines := strings.Split(strings.TrimSpace(stdout), "\n")
 				assert.Assert(t, len(lines) >= 2, fmt.Sprintf("expected at least 2 lines, got %d", len(lines)))
@@ -163,7 +169,7 @@ func TestListProcessContainerWideMode(t *testing.T) {
 
 	testCase.Expected = func(data test.Data, helpers test.Helpers) *test.Expected {
 		return &test.Expected{
-			ExitCode: 0,
+			ExitCode: expect.ExitCodeSuccess,
 			Output: func(stdout string, t tig.T) {
 				lines := strings.Split(strings.TrimSpace(stdout), "\n")
 				assert.Assert(t, len(lines) >= 2, fmt.Sprintf("expected at least 2 lines, got %d", len(lines)))
@@ -197,7 +203,7 @@ func TestListProcessContainerWithLabels(t *testing.T) {
 
 	testCase.Expected = func(data test.Data, helpers test.Helpers) *test.Expected {
 		return &test.Expected{
-			ExitCode: 0,
+			ExitCode: expect.ExitCodeSuccess,
 			Output: func(stdout string, t tig.T) {
 				lines := strings.Split(strings.TrimSpace(stdout), "\n")
 				assert.Assert(t, len(lines) == 1, fmt.Sprintf("expected 1 line, got %d", len(lines)))
